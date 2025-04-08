@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/Users/johnmcconkie/Desktop/CineNiche/Backend/Backend/Backend.csproj": {}
+    "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/Backend.csproj": {}
   },
   "projects": {
-    "/Users/johnmcconkie/Desktop/CineNiche/Backend/Backend/Backend.csproj": {
+    "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/johnmcconkie/Desktop/CineNiche/Backend/Backend/Backend.csproj",
+        "projectUniqueName": "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/Backend.csproj",
         "projectName": "Backend",
-        "projectPath": "/Users/johnmcconkie/Desktop/CineNiche/Backend/Backend/Backend.csproj",
-        "packagesPath": "/Users/johnmcconkie/.nuget/packages/",
-        "outputPath": "/Users/johnmcconkie/Desktop/CineNiche/Backend/Backend/obj/",
+        "projectPath": "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/Backend.csproj",
+        "packagesPath": "/Users/andieclegg/.nuget/packages/",
+        "outputPath": "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/johnmcconkie/.nuget/NuGet/NuGet.Config"
+          "/Users/andieclegg/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -47,6 +47,26 @@
               "target": "Package",
               "version": "[8.0.13, )"
             },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[8.0.13, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.13, )"
+            },
+            "Microsoft.EntityFrameworkCore.Sqlite": {
+              "target": "Package",
+              "version": "[8.0.13, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.13, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.6.2, )"
@@ -71,7 +91,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.407/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.406/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
