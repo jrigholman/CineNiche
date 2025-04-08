@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useAuth, ReviewedMovie } from '../context/AuthContext';
+import { useAuth, ReviewedMovie, MovieItem } from '../context/AuthContext';
 import { Pencil, Trash2 } from 'lucide-react';
+import { moviesApi, MovieTitle } from '../services/api';
 
 // Star Rating component
 const StarRating: React.FC<{ 
@@ -68,7 +69,7 @@ const StarRating: React.FC<{
 
 // Movie type definition with additional fields
 interface Movie {
-  id: number;
+  id: string;
   title: string;
   imageUrl: string;
   genre: string;
@@ -83,10 +84,30 @@ interface Movie {
   ratingCount: number;
 }
 
-// Sample movie data with updated fields
+// Convert MovieTitle from API to our frontend Movie type
+const convertToMovie = (movieTitle: MovieTitle): Movie => {
+  // Create a movie object from the API data
+  return {
+    id: movieTitle.show_id,
+    title: movieTitle.title || 'Untitled',
+    imageUrl: `https://via.placeholder.com/300x450?text=${encodeURIComponent(movieTitle.title || 'Movie')}`,
+    genre: 'Drama', // Default genre since backend doesn't have this yet
+    year: movieTitle.release_year || 0,
+    director: movieTitle.director || 'Unknown',
+    cast: [], // Backend doesn't have cast information yet
+    country: 'Unknown', // Backend doesn't have country information yet
+    description: 'No description available', // Backend doesn't have description yet
+    contentRating: movieTitle.rating || 'NR',
+    runtime: 0, // Backend doesn't have runtime information yet
+    averageRating: 0, // Will be calculated from ratings if available
+    ratingCount: 0 // Will be calculated from ratings if available
+  };
+};
+
+// Sample movie data as fallback
 const SAMPLE_MOVIES: Movie[] = [
   { 
-    id: 1, 
+    id: '1', 
     title: 'The Matrix', 
     imageUrl: 'https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_.jpg', 
     genre: 'Sci-Fi',
@@ -101,7 +122,7 @@ const SAMPLE_MOVIES: Movie[] = [
     ratingCount: 2836
   },
   { 
-    id: 2, 
+    id: '2', 
     title: 'Eraserhead', 
     imageUrl: 'https://m.media-amazon.com/images/M/MV5BNWM1NmYyM2ItMTFhNy00NDU0LTk2ODItYWEyMzQ5MThmNzVhXkEyXkFqcGdeQXVyNTU1OTUzNDg@._V1_.jpg', 
     genre: 'Experimental', 
@@ -116,7 +137,7 @@ const SAMPLE_MOVIES: Movie[] = [
     ratingCount: 1425
   },
   { 
-    id: 3, 
+    id: '3', 
     title: 'The Lord of the Rings', 
     imageUrl: 'https://m.media-amazon.com/images/M/MV5BNzA5ZDNlZWMtM2NhNS00NDJjLTk4NDItYTRmY2EwMWZlMTY3XkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_.jpg', 
     genre: 'Fantasy', 
@@ -131,7 +152,7 @@ const SAMPLE_MOVIES: Movie[] = [
     ratingCount: 3854
   },
   { 
-    id: 4, 
+    id: '4', 
     title: 'The Dark Knight', 
     imageUrl: 'https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_.jpg', 
     genre: 'Action',
@@ -146,7 +167,7 @@ const SAMPLE_MOVIES: Movie[] = [
     ratingCount: 4210
   },
   { 
-    id: 5, 
+    id: '5', 
     title: 'Titanic', 
     imageUrl: 'https://m.media-amazon.com/images/M/MV5BMDdmZGU3NDQtY2E5My00ZTliLWIzOTUtMTY4ZGI1YjdiNjk3XkEyXkFqcGdeQXVyNTA4NzY1MzY@._V1_.jpg', 
     genre: 'Romance',
@@ -161,7 +182,7 @@ const SAMPLE_MOVIES: Movie[] = [
     ratingCount: 3568
   },
   {
-    id: 6,
+    id: '6',
     title: 'Forrest Gump',
     imageUrl: 'https://m.media-amazon.com/images/M/MV5BNWIwODRlZTUtY2U3ZS00Yzg1LWJhNzYtMmZiYmEyNmU1NjMzXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_.jpg',
     genre: 'Drama',
@@ -176,7 +197,7 @@ const SAMPLE_MOVIES: Movie[] = [
     ratingCount: 2945
   },
   {
-    id: 7,
+    id: '7',
     title: 'Interstellar',
     imageUrl: 'https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg',
     genre: 'Sci-Fi',
@@ -191,6 +212,9 @@ const SAMPLE_MOVIES: Movie[] = [
     ratingCount: 3187
   }
 ];
+
+// Movie data store (would be replaced by API in real app)
+export let moviesData = [...SAMPLE_MOVIES];
 
 // Admin Movie Edit Form component
 const MovieEditForm: React.FC<{
@@ -365,13 +389,11 @@ const MovieEditForm: React.FC<{
   );
 };
 
-// Movie data store (would be replaced by API in real app)
-export let moviesData = [...SAMPLE_MOVIES];
-
 const MovieDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [reviewText, setReviewText] = useState('');
@@ -396,35 +418,88 @@ const MovieDetailPage: React.FC = () => {
   } = useAuth();
   
   // Find user's review for this movie
-  const userReview = reviewedMovies.find(review => review.id === Number(id));
-  
-  // Check if movie is in favorites/watchlist
+  const userReview = reviewedMovies.find(review => review.id === id);
+
+  // Fetch movie data from API
   useEffect(() => {
-    if (movie) {
-      setIsInFavorites(checkFavorites(movie.id));
-      setIsInWatchlist(checkWatchlist(movie.id));
-    }
-  }, [movie, checkFavorites, checkWatchlist]);
-  
-  useEffect(() => {
-    // In a real app, this would be an API call
-    setLoading(true);
-    setTimeout(() => {
-      const foundMovie = moviesData.find(m => m.id === Number(id));
-      setMovie(foundMovie || null);
-      setLoading(false);
+    const fetchMovie = async () => {
+      if (!id) return;
       
-      // Initialize review form if user has already reviewed
-      if (userReview) {
-        setReviewText(userReview.review);
-        setReviewRating(userReview.rating);
-      } else {
-        // Reset form if no review exists
-        setReviewText('');
-        setReviewRating(0);
+      try {
+        setLoading(true);
+        const movieData = await moviesApi.getMovieById(id);
+        
+        if (movieData) {
+          // Convert the API data to our frontend Movie format
+          const movieDetails = convertToMovie(movieData);
+          
+          // Fetch the average rating for this movie
+          try {
+            const avgRating = await moviesApi.getMovieAverageRating(id);
+            movieDetails.averageRating = avgRating;
+            
+            // Get the number of ratings
+            const ratings = await moviesApi.getMovieRatings(id);
+            movieDetails.ratingCount = ratings.length;
+          } catch (err) {
+            console.error('Error fetching ratings:', err);
+            // Use default values if ratings can't be fetched
+            movieDetails.averageRating = 0;
+            movieDetails.ratingCount = 0;
+          }
+          
+          setMovie(movieDetails);
+          
+          // Check if the movie is in favorites or watchlist
+          if (isAuthenticated) {
+            setIsInFavorites(checkFavorites(id));
+            setIsInWatchlist(checkWatchlist(id));
+          }
+          
+          // Set review text and rating if the user has already reviewed this movie
+          if (userReview) {
+            setReviewText(userReview.review);
+            setReviewRating(userReview.rating);
+          }
+        } else {
+          // Use sample data as fallback
+          const sampleMovie = SAMPLE_MOVIES.find(m => m.id === id);
+          if (sampleMovie) {
+            setMovie(sampleMovie);
+            // Check if the movie is in favorites or watchlist
+            if (isAuthenticated) {
+              setIsInFavorites(checkFavorites(id));
+              setIsInWatchlist(checkWatchlist(id));
+            }
+            
+            // Set review text and rating if the user has already reviewed this movie
+            if (userReview) {
+              setReviewText(userReview.review);
+              setReviewRating(userReview.rating);
+            }
+            
+            setError('Could not fetch movie details from API. Using sample data.');
+          } else {
+            setError('Movie not found');
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching movie:', err);
+        setError('Error loading movie details');
+        
+        // Try to use sample data as fallback
+        const sampleMovie = SAMPLE_MOVIES.find(m => m.id === id);
+        if (sampleMovie) {
+          setMovie(sampleMovie);
+          setError('Could not fetch movie details from API. Using sample data.');
+        }
+      } finally {
+        setLoading(false);
       }
-    }, 500); // Simulate API delay
-  }, [id, userReview]);
+    };
+    
+    fetchMovie();
+  }, [id, isAuthenticated, checkFavorites, checkWatchlist, userReview]);
   
   // This effect ensures the component updates when reviewedMovies changes
   useEffect(() => {
@@ -443,47 +518,34 @@ const MovieDetailPage: React.FC = () => {
     }
   }, [isReviewMode]);
   
+  // Handle review submission
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!movie) return;
-    
-    // Create review object
-    const review: ReviewedMovie = {
-      id: movie.id,
-      title: movie.title,
-      imageUrl: movie.imageUrl,
-      genre: movie.genre,
-      year: movie.year,
-      rating: reviewRating,
-      review: reviewText
-    };
-    
-    // Add review
-    addReview(review);
-    
-    // Exit review mode
-    setIsReviewMode(false);
+    if (movie && reviewRating > 0) {
+      const reviewData: ReviewedMovie = {
+        id: movie.id,
+        title: movie.title,
+        imageUrl: movie.imageUrl,
+        genre: movie.genre,
+        year: movie.year,
+        rating: reviewRating,
+        review: reviewText
+      };
+      
+      addReview(reviewData);
+      setIsReviewMode(false);
+      
+      // Scroll back to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
-  const handleLoginRedirect = () => {
-    navigate('/login');
-  };
-  
-  // Get similar movies based on genre
-  const getSimilarMovies = () => {
-    if (!movie) return [];
-    // Return up to 5 movies with the same genre, and fill with other movies if needed
-    const sameGenre = moviesData.filter(m => m.id !== movie.id && m.genre === movie.genre);
-    const otherMovies = moviesData.filter(m => m.id !== movie.id && m.genre !== movie.genre);
-    return [...sameGenre, ...otherMovies].slice(0, 5);
-  };
-  
+  // Handle add to favorites
   const handleAddToFavorites = () => {
     if (!movie) return;
     
-    // Convert movie to MovieItem format
-    const movieItem = {
+    const movieItem: MovieItem = {
       id: movie.id,
       title: movie.title,
       imageUrl: movie.imageUrl,
@@ -494,12 +556,12 @@ const MovieDetailPage: React.FC = () => {
     toggleFavorite(movieItem);
     setIsInFavorites(!isInFavorites);
   };
-  
+
+  // Handle add to watchlist
   const handleAddToWatchlist = () => {
     if (!movie) return;
     
-    // Convert movie to MovieItem format
-    const movieItem = {
+    const movieItem: MovieItem = {
       id: movie.id,
       title: movie.title,
       imageUrl: movie.imageUrl,
@@ -509,6 +571,15 @@ const MovieDetailPage: React.FC = () => {
     
     toggleWatchlist(movieItem);
     setIsInWatchlist(!isInWatchlist);
+  };
+
+  // Get similar movies based on genre
+  const getSimilarMovies = () => {
+    if (!movie) return [];
+    // Return up to 5 movies with the same genre, and fill with other movies if needed
+    const sameGenre = moviesData.filter(m => m.id !== movie.id && m.genre === movie.genre);
+    const otherMovies = moviesData.filter(m => m.id !== movie.id && m.genre !== movie.genre);
+    return [...sameGenre, ...otherMovies].slice(0, 5);
   };
   
   const handleSaveEdit = (updatedMovie: Movie) => {
@@ -660,7 +731,7 @@ const MovieDetailPage: React.FC = () => {
                 {!isAuthenticated && (
                   <button 
                     className="btn-primary btn-sign-in"
-                    onClick={handleLoginRedirect}
+                    onClick={() => navigate('/login')}
                   >
                     Sign in to review
                   </button>

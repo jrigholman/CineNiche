@@ -16,5 +16,5 @@ public class MovieUser
     public string city { get; set; }
     public string state { get; set; }
     public string password { get; set; }
-
+    public int isAdmin { get; set; } // 0 for regular users, 1 for admins
 }

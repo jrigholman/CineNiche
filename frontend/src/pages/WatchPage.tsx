@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Play, Pause, Volume2, VolumeX, Settings, Maximize, SkipBack, SkipForward, ArrowLeft } from 'lucide-react';
 import { moviesData } from './MovieDetailPage';
+import { useAuth } from '../context/AuthContext';
+import { Pencil, Heart, Bookmark, Plus, Info } from 'lucide-react';
 
 interface Movie {
-  id: number;
+  id: string;
   title: string;
   imageUrl: string;
   genre: string;
@@ -30,16 +32,24 @@ const WatchPage: React.FC = () => {
   const [currentTime, setCurrentTime] = useState('0:00');
   const [duration, setDuration] = useState('0:00');
   const videoContainerRef = useRef<HTMLDivElement>(null);
+  const { isAuthenticated } = useAuth();
+  
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
   
   useEffect(() => {
     // In a real app, this would be an API call
     setLoading(true);
     setTimeout(() => {
-      const foundMovie = moviesData.find(m => m.id === Number(id));
+      const foundMovie = moviesData.find(m => m.id === id);
       setMovie(foundMovie || null);
       setLoading(false);
       
       if (foundMovie) {
+        document.title = `Watch: ${foundMovie.title} | CineNiche`;
         // Set up fake duration based on movie runtime
         const totalMinutes = foundMovie.runtime;
         const hours = Math.floor(totalMinutes / 60);
@@ -113,6 +123,10 @@ const WatchPage: React.FC = () => {
     }
   };
   
+  const handleBackToDetails = () => {
+    navigate(`/movies/${id}`);
+  };
+  
   if (loading) {
     return (
       <div className="loading">
@@ -146,7 +160,7 @@ const WatchPage: React.FC = () => {
           </div>
           <button 
             className="watch-back-button"
-            onClick={() => navigate(`/movies/${movie.id}`)}
+            onClick={handleBackToDetails}
           >
             <ArrowLeft size={20} /> Back
           </button>

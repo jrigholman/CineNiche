@@ -4,7 +4,6 @@ namespace CineNiche.API.DTOs
 {
     public class MovieUserDto
     {
-
         public int user_id { get; set; } // Primary key - required
         public string name { get; set; }
         public string email { get; set; }
@@ -14,6 +13,7 @@ namespace CineNiche.API.DTOs
         public string city { get; set; }
         public string state { get; set; }
         public string password { get; set; }
+        public int isAdmin { get; set; } // 0 for regular users, 1 for admins
 
         public static MovieUserDto FromEntity(MovieUser entity)
         {
@@ -27,7 +27,8 @@ namespace CineNiche.API.DTOs
                 gender = entity.gender,
                 city = entity.city,
                 state = entity.state,
-                password = entity.password
+                password = entity.password,
+                isAdmin = entity.isAdmin
             };
         }
     }

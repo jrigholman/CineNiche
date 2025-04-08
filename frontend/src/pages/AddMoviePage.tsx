@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { moviesData } from './MovieDetailPage';
 
-// Shared Movie interface definition
+// Define Movie type
 interface Movie {
-  id: number;
+  id: string;
   title: string;
   imageUrl: string;
   genre: string;
@@ -22,11 +22,11 @@ interface Movie {
 
 const AddMoviePage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   
-  // State for the new movie fields
+  // Form state
   const [title, setTitle] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/300x450?text=New+Movie');
   const [genre, setGenre] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [director, setDirector] = useState('');
@@ -34,24 +34,29 @@ const AddMoviePage: React.FC = () => {
   const [country, setCountry] = useState('');
   const [description, setDescription] = useState('');
   const [contentRating, setContentRating] = useState('');
-  const [runtime, setRuntime] = useState(90);
+  const [runtime, setRuntime] = useState(90); // Default to 90 minutes
   
-  // If not admin, redirect
-  if (!isAdmin) {
-    navigate('/movies');
-    return null;
-  }
+  // Redirect if not authenticated or not admin
+  React.useEffect(() => {
+    if (!isAuthenticated || !isAdmin) {
+      navigate('/movies');
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
   
+  // Handle cast input
   const handleCastChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCastInput(e.target.value);
   };
   
+  // Submit form
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Generate an ID that doesn't exist in the current data
     // In a real app, the backend would handle this
-    const newId = Math.max(...moviesData.map(m => m.id)) + 1;
+    // Convert existing string IDs to numbers for calculation, then back to string for the new ID
+    const highestId = Math.max(...moviesData.map(m => parseInt(m.id))) + 1;
+    const newId = highestId.toString();
     
     // Create a new movie object
     const newMovie: Movie = {
@@ -109,8 +114,12 @@ const AddMoviePage: React.FC = () => {
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     required
-                    placeholder="https://example.com/movie-poster.jpg"
                   />
+                  {imageUrl && (
+                    <div className="image-preview">
+                      <img src={imageUrl} alt="Preview" />
+                    </div>
+                  )}
                 </div>
                 
                 <div className="form-row">
@@ -156,7 +165,6 @@ const AddMoviePage: React.FC = () => {
                     value={castInput}
                     onChange={handleCastChange}
                     required
-                    placeholder="Actor 1, Actor 2, Actor 3"
                   />
                 </div>
               </div>
@@ -182,7 +190,6 @@ const AddMoviePage: React.FC = () => {
                       value={contentRating}
                       onChange={(e) => setContentRating(e.target.value)}
                       required
-                      placeholder="PG-13, R, etc."
                     />
                   </div>
                   
@@ -208,13 +215,6 @@ const AddMoviePage: React.FC = () => {
                     required
                   />
                 </div>
-                
-                {imageUrl && (
-                  <div className="image-preview">
-                    <label>Image Preview</label>
-                    <img src={imageUrl} alt="Movie poster preview" />
-                  </div>
-                )}
               </div>
             </div>
             

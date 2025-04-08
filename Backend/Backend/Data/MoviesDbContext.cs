@@ -11,6 +11,8 @@ namespace CineNiche.API.Data
         public DbSet<MovieTitle> Movies { get; set; }
         public DbSet<MovieRating> Ratings { get; set; }
         public DbSet<MovieUser> Users { get; set; }
+        public DbSet<UserFavorite> Favorites { get; set; }
+        public DbSet<UserWatchlist> Watchlist { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -18,6 +20,8 @@ namespace CineNiche.API.Data
             modelBuilder.Entity<MovieTitle>().ToTable("movies_titles");
             modelBuilder.Entity<MovieRating>().ToTable("movies_ratings");
             modelBuilder.Entity<MovieUser>().ToTable("movies_users");
+            modelBuilder.Entity<UserFavorite>().ToTable("user_favorites");
+            modelBuilder.Entity<UserWatchlist>().ToTable("user_watchlist");
 
             // Configure primary keys
             modelBuilder.Entity<MovieRating>()

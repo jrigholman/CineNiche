@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logoImage from '../cineniche-high-resolution2.png';
+import { moviesApi, MovieTitle } from '../services/api';
 
-// Sample movie images for carousel
-const movieImages = [
+// Sample movie images for carousel (fallback)
+const fallbackMovieImages = [
   { id: 1, src: "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_.jpg", title: "The Matrix" },
   { id: 2, src: "https://m.media-amazon.com/images/M/MV5BMDdmZGU3NDQtY2E5My00ZTliLWIzOTUtMTY4ZGI1YjdiNjk3XkEyXkFqcGdeQXVyNTA4NzY1MzY@._V1_.jpg", title: "Titanic" },
   { id: 3, src: "https://m.media-amazon.com/images/M/MV5BNzA5ZDNlZWMtM2NhNS00NDJjLTk4NDItYTRmY2EwMWZlMTY3XkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_.jpg", title: "The Lord of the Rings" },
@@ -13,8 +14,8 @@ const movieImages = [
   { id: 8, src: "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg", title: "Interstellar" }
 ];
 
-// Sample recommended movies
-const recommendedMovies = [
+// Sample recommended movies (fallback)
+const fallbackRecommendedMovies = [
   { id: 10, src: "https://m.media-amazon.com/images/M/MV5BNWM1NmYyM2ItMTFhNy00NDU0LTk2ODItYWEyMzQ5MThmNzVhXkEyXkFqcGdeQXVyNTU1OTUzNDg@._V1_.jpg", title: "Eraserhead" },
   { id: 11, src: "https://m.media-amazon.com/images/M/MV5BNDg4NjM1YjMtYmNhZC00MjM0LWFiZmYtNGY1YjA3MzZmODc5XkEyXkFqcGdeQXVyNDk3NzU2MTQ@._V1_.jpg", title: "Brazil" },
   { id: 12, src: "https://m.media-amazon.com/images/M/MV5BNWZiMTFiZTgtN2I1OC00MDgxLWI2ZmQtNDFiYmQ5MzlhZDZlXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg", title: "Stalker" },
@@ -23,9 +24,14 @@ const recommendedMovies = [
   { id: 15, src: "https://m.media-amazon.com/images/M/MV5BMDE3ZmY0OGQtNWI4MS00OWI1LWJjOTUtZGIzYTJjNzkzYzM2XkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_.jpg", title: "Everything Everywhere All at Once" }
 ];
 
-// Duplicate arrays to create a continuous scrolling effect
-const extendedMovieImages = [...movieImages, ...movieImages, ...movieImages];
-const extendedRecommendedMovies = [...recommendedMovies, ...recommendedMovies, ...recommendedMovies];
+// Convert MovieTitle to carousel item format
+const convertToCarouselItem = (movie: MovieTitle) => {
+  return {
+    id: movie.show_id,
+    src: `https://via.placeholder.com/300x450?text=${encodeURIComponent(movie.title || 'Movie')}`,
+    title: movie.title || 'Untitled'
+  };
+};
 
 const HomePage: React.FC = () => {
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -36,9 +42,55 @@ const HomePage: React.FC = () => {
   const [startXRecommended, setStartXRecommended] = useState<number | null>(null);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [scrollLeftRecommended, setScrollLeftRecommended] = useState(0);
+  const [movieImages, setMovieImages] = useState<{id: string|number, src: string, title: string}[]>([]);
+  const [recommendedMovies, setRecommendedMovies] = useState<{id: string|number, src: string, title: string}[]>([]);
+  const [loading, setLoading] = useState(true);
   
   // Get auth context
   const { isAuthenticated, user } = useAuth();
+  
+  // Fetch movies from API
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        setLoading(true);
+        const movieTitles = await moviesApi.getAllMovies();
+        
+        if (movieTitles && movieTitles.length > 0) {
+          // Convert to carousel item format
+          const recentMovies = movieTitles
+            .map(convertToCarouselItem)
+            .slice(0, 6); // Take top 6 movies
+          
+          setMovieImages(recentMovies);
+          
+          // For recommended movies, just use a different slice of the same data for demo
+          const recommendedItems = movieTitles
+            .slice(6, 12)
+            .map(convertToCarouselItem);
+          
+          setRecommendedMovies(recommendedItems);
+        } else {
+          // Use fallback data
+          setMovieImages(fallbackMovieImages);
+          setRecommendedMovies(fallbackRecommendedMovies);
+        }
+      } catch (err) {
+        console.error('Error fetching movies:', err);
+        // Use fallback data
+        setMovieImages(fallbackMovieImages);
+        setRecommendedMovies(fallbackRecommendedMovies);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchMovies();
+  }, []);
+
+  // Create extended arrays for continuous scrolling
+  const extendedMovieImages = [...movieImages, ...movieImages, ...movieImages];
+  const extendedRecommendedMovies = [...recommendedMovies, ...recommendedMovies, ...recommendedMovies];
   
   // Auto-scroll effect for recent movies
   useEffect(() => {
