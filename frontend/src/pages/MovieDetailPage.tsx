@@ -381,6 +381,7 @@ const MovieDetailPage: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const navigate = useNavigate();
   const similarMoviesRef = useRef<HTMLDivElement>(null);
+  const reviewFormRef = useRef<HTMLDivElement>(null);
   
   // Get auth context
   const { 
@@ -433,6 +434,14 @@ const MovieDetailPage: React.FC = () => {
       console.log("User review updated:", userReview.rating);
     }
   }, [reviewedMovies, id]);
+  
+  // This effect handles scrolling to the review form when it becomes visible
+  useEffect(() => {
+    if (isReviewMode && reviewFormRef.current) {
+      // Scroll the review form into view with smooth behavior
+      reviewFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [isReviewMode]);
   
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -689,6 +698,15 @@ const MovieDetailPage: React.FC = () => {
                 </div>
               )}
               
+              <div className="watch-movie-container">
+                <button 
+                  className="btn-primary btn-watch"
+                  onClick={() => navigate(`/watch/${movie.id}`)}
+                >
+                  <span className="action-icon">▶</span> Watch Movie
+                </button>
+              </div>
+              
               {(!isAuthenticated || !userReview) && (
                 <div className="average-rating-container right-column-rating">
                   <span className="meta-label">Average CineNiche Rating</span>
@@ -740,7 +758,7 @@ const MovieDetailPage: React.FC = () => {
             </div>
             
             {isReviewMode && (
-              <div className="review-form-container">
+              <div className="review-form-container" ref={reviewFormRef}>
                 <h3>{userReview ? 'Edit Your Review' : 'Write a Review'}</h3>
                 
                 <form onSubmit={handleReviewSubmit} className="review-form">

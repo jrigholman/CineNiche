@@ -12,6 +12,7 @@ import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import MyReviewsPage from './pages/MyReviewsPage';
 import ProfilePage from './pages/ProfilePage';
+import WatchPage from './pages/WatchPage';
 
 // Import components
 import Navbar from './components/Navbar';
@@ -31,6 +32,7 @@ const App: React.FC = () => {
             <Route path="/movies" element={<MoviesPage />} />
             <Route path="/movies/add" element={<AddMoviePage />} />
             <Route path="/movies/:id" element={<MovieDetailPage />} />
+            <Route path="/watch/:id" element={<WatchPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />

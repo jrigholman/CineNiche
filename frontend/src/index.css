@@ -551,6 +551,10 @@ input:focus, select:focus, textarea:focus {
   position: relative;
 }
 
+.login-page {
+  background-size: 130%;
+}
+
 .auth-page:before {
   content: '';
   position: absolute;
@@ -568,7 +572,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: var(--box-shadow);
   padding: 2.5rem;
   width: 100%;
-  max-width: 450px;
+  max-width: 550px;
   position: relative;
   overflow: hidden;
   z-index: 2;
@@ -2373,9 +2377,9 @@ button:disabled {
 }
 
 .collection-actions-container {
-  margin: 0.8rem 0 1.2rem;
   display: flex;
   gap: 1rem;
+  margin-top: 1rem;
   flex-wrap: wrap;
 }
 
@@ -2663,6 +2667,11 @@ button:disabled {
     flex: 1;
     justify-content: center;
   }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
 }
 
 .image-preview {
@@ -2839,4 +2848,370 @@ button:disabled {
   .terms-section {
     padding: 1.5rem;
   }
+}
+
+.watch-movie-container {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.btn-watch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: var(--accent-color);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-watch:hover {
+  background-color: #ffba00;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.btn-watch .action-icon {
+  font-size: 1.1rem;
+}
+
+/* Watch Page */
+.watch-page {
+  min-height: 100vh;
+  background-color: #0a0a14;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+}
+
+.watch-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.watch-header {
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.watch-back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.5rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.watch-back-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--accent-color);
+  transform: translateX(-3px);
+}
+
+.watch-info h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--text-color);
+}
+
+.watch-meta {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.3rem;
+}
+
+.watch-meta span {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.watch-year {
+  color: var(--accent-color) !important;
+  font-weight: 500;
+}
+
+.watch-rating {
+  padding: 0.1rem 0.4rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.player-container {
+  width: 100%;
+  background-color: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  background-color: #000;
+  overflow: hidden;
+}
+
+/* Full screen styles */
+.video-container:fullscreen {
+  padding-bottom: 0;
+  height: 100%;
+}
+
+.video-container:fullscreen .movie-title-overlay {
+  top: 2rem;
+  left: 2rem;
+  font-size: 120%;
+}
+
+.video-container:fullscreen .play-button {
+  transform: scale(1.5);
+}
+
+.player-controls {
+  background: linear-gradient(to top, #080810, #12121f);
+  padding: 1rem;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.video-container:fullscreen .player-controls {
+  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.video-container:fullscreen:hover .player-controls {
+  opacity: 1;
+}
+
+.video-poster {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.play-overlay:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.play-button {
+  width: 80px;
+  height: 80px;
+  background-color: rgba(243, 88, 122, 0.2);
+  border: 2px solid var(--accent-color);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--accent-color);
+  transition: all 0.3s ease;
+}
+
+.play-overlay:hover .play-button {
+  background-color: rgba(243, 88, 122, 0.3);
+  transform: scale(1.1);
+  box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
+}
+
+.movie-title-overlay {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  transition: opacity 0.5s ease;
+}
+
+.movie-title-overlay.fade {
+  opacity: 0;
+}
+
+.movie-title-overlay h1 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.progress-container {
+  margin-bottom: 1rem;
+  padding: 0 0.5rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  transition: height 0.2s ease;
+}
+
+.progress-bar:hover {
+  height: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--accent-color);
+  border-radius: 3px;
+  position: relative;
+}
+
+.progress-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--accent-color);
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  box-shadow: 0 0 10px rgba(243, 88, 122, 0.7);
+}
+
+.progress-bar:hover .progress-thumb {
+  opacity: 1;
+}
+
+.controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0.5rem;
+}
+
+.left-controls, .right-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.control-button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--accent-color);
+  transform: scale(1.1);
+}
+
+.time-display {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+  font-family: monospace;
+}
+
+@media (max-width: 768px) {
+  .player-container {
+    border-radius: 0;
+  }
+  
+  .watch-page {
+    padding: 0;
+  }
+  
+  .watch-header {
+    padding: 1rem;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .movie-title-overlay h1 {
+    font-size: 1.2rem;
+  }
+  
+  .player-controls {
+    padding: 0.5rem;
+  }
+  
+  .control-button {
+    padding: 0.3rem;
+  }
+  
+  .watch-meta {
+    flex-wrap: wrap;
+  }
+}
+
+/* Remove up/down arrows from number inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Select dropdown styling */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+  cursor: pointer;
+}
+
+select::-ms-expand {
+  display: none;
 }
