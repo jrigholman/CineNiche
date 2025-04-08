@@ -99,7 +99,7 @@ const convertToMovieItem = async (movieId: string): Promise<MovieItem | null> =>
       return {
         id: movieData.show_id,
         title: movieData.title || 'Untitled',
-        imageUrl: `https://via.placeholder.com/300x450?text=${encodeURIComponent(movieData.title || 'Movie')}`,
+        imageUrl: `/images/placeholder-movie.jpg`, // Use local placeholder in images folder
         genre: 'Drama', // Default genre since backend doesn't have this yet
         year: movieData.release_year || 0
       };

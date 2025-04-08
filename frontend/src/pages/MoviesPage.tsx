@@ -37,21 +37,64 @@ export interface MovieItem {
 }
 
 // Convert backend MovieTitle to frontend Movie format
-const convertToMovie = (movieTitle: MovieTitle): Movie => {
+const convertToMovie = async (movieTitle: MovieTitle): Promise<Movie> => {
+  // Clean up the title if it exists, otherwise show as "Unknown"
+  const cleanTitle = movieTitle.title ? movieTitle.title.replace(/#/g, '').trim() : 'Unknown Title';
+  
+  // Get genres from Categories array if available - handle both camelCase and PascalCase
+  const categories = movieTitle.Categories || movieTitle.categories || [];
+  const genres = categories.length > 0 ? categories : ['Unknown'];
+  
+  // Placeholder for poster - will be populated later in batches
+  let posterUrl = `/images/placeholder-movie.jpg`;
+  
+  // Use actual data where available, fallback to Unknown
   return {
     id: movieTitle.show_id,
-    title: movieTitle.title || 'Untitled',
+    title: cleanTitle,
     year: movieTitle.release_year || 0,
-    genres: ['Drama'], // Default genre since backend doesn't have this yet
-    contentType: 'Movie', // Default type since backend doesn't have this yet
-    poster: `https://via.placeholder.com/300x450?text=${encodeURIComponent(movieTitle.title || 'Movie')}`,
-    description: 'No description available', // Backend doesn't have this yet
+    genres: genres,
+    contentType: movieTitle.type || "Movie",
+    poster: posterUrl,
+    description: movieTitle.description || 'No description available.',
     contentRating: movieTitle.rating || 'NR',
     director: movieTitle.director || 'Unknown',
-    imdbRating: 0, // Backend doesn't have this yet
+    imdbRating: 0, // No actual source for this
     averageRating: 0, // Will be populated from ratings if available
     ratingCount: 0 // Will be populated from ratings if available
   };
+};
+
+// Helper function to update posters in batches
+const updatePostersInBatches = async (movies: Movie[], batchSize = 5, delay = 100): Promise<Movie[]> => {
+  const updatedMovies = [...movies];
+  
+  // Process in small batches to avoid overwhelming the API
+  for (let i = 0; i < updatedMovies.length; i += batchSize) {
+    const batch = updatedMovies.slice(i, i + batchSize);
+    
+    // Process this batch
+    await Promise.all(
+      batch.map(async (movie, index) => {
+        try {
+          // Only fetch poster if we have a title
+          if (movie.title && movie.title !== 'Unknown Title') {
+            const posterUrl = await moviesApi.getMoviePosterUrl(movie.title);
+            updatedMovies[i + index].poster = posterUrl;
+          }
+        } catch (error) {
+          console.error(`Error fetching poster for ${movie.title}:`, error);
+        }
+      })
+    );
+    
+    // Small delay between batches to avoid overwhelming the API
+    if (i + batchSize < updatedMovies.length) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  return updatedMovies;
 };
 
 // Sample movie data as fallback
@@ -154,7 +197,13 @@ const MoviesPage: React.FC = () => {
   const [collectionFilter, setCollectionFilter] = useState<string>('All');
   const [isCollectionDropdownOpen, setIsCollectionDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true); // Used for first page load
+  const [loadingMore, setLoadingMore] = useState(false); // Used for subsequent page loads
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [hasMorePages, setHasMorePages] = useState(true);
+  const pageSize = 24; // Number of movies per page
   
   const { isAuthenticated, favorites, watchlist, isAdmin } = useAuth();
   
@@ -166,19 +215,35 @@ const MoviesPage: React.FC = () => {
   const contentTypeDropdownRef = useRef<HTMLDivElement>(null);
   const collectionDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch movies from API
+  // Fetch initial page of movies from API
   useEffect(() => {
-    const fetchMovies = async () => {
+    const fetchInitialMovies = async () => {
       try {
-        setLoading(true);
-        console.log('Attempting to fetch movies from API');
-        const movieTitles = await moviesApi.getAllMovies();
+        setInitialLoading(true);
+        console.log('Fetching first page of movies');
         
-        if (movieTitles.length > 0) {
-          // Convert backend data to frontend format
-          const convertedMovies = movieTitles.map(convertToMovie);
-          setMovies(convertedMovies);
-          setFilteredMovies(convertedMovies);
+        const response = await moviesApi.getMoviesPaged(1, pageSize);
+        
+        if (response.movies.length > 0) {
+          // Convert backend data to frontend format without posters
+          const moviesWithoutPosters = await Promise.all(response.movies.map(convertToMovie));
+          
+          // Update pagination info
+          setCurrentPage(response.pagination.currentPage);
+          setTotalPages(response.pagination.totalPages);
+          setHasMorePages(response.pagination.hasNext);
+          
+          // Set initial movies without posters to show UI quickly
+          setMovies(moviesWithoutPosters);
+          setFilteredMovies(moviesWithoutPosters);
+          
+          // Then start loading posters in batches in the background
+          console.log('Initial movies loaded, fetching posters in batches...');
+          const moviesWithPosters = await updatePostersInBatches(moviesWithoutPosters);
+          
+          // Update with posters once they're loaded
+          setMovies(moviesWithPosters);
+          setFilteredMovies(moviesWithPosters);
         } else {
           // Use sample data as fallback
           console.log('No movies returned from API, using sample data');
@@ -196,36 +261,78 @@ const MoviesPage: React.FC = () => {
         setMovies(sampleMovies);
         setFilteredMovies(sampleMovies);
       } finally {
+        setInitialLoading(false);
         setLoading(false);
       }
     };
     
-    fetchMovies();
+    fetchInitialMovies();
   }, []);
 
-  // Extract unique genres from movies
-  const uniqueGenres = useMemo(() => {
-    const genres = new Set<string>();
-    movies.forEach(movie => {
-      movie.genres.forEach(genre => {
-        genres.add(genre);
-      });
-    });
-    return ['All Genres', ...Array.from(genres)];
-  }, [movies]);
-
-  // Extract unique content types from movies
-  const contentTypes = useMemo(() => {
-    const types = new Set<string>();
-    movies.forEach(movie => {
-      types.add(movie.contentType);
-    });
-    return ['All Types', ...Array.from(types)];
-  }, [movies]);
-
-  useEffect(() => {
-    // Filter movies based on search term, genre, content type and collection
-    let result = movies;
+  // Load more movies when user clicks "Load More"
+  const loadMoreMovies = async () => {
+    if (!hasMorePages || loadingMore) return;
+    
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+      console.log(`Loading page ${nextPage} of movies`);
+      
+      const response = await moviesApi.getMoviesPaged(nextPage, pageSize);
+      
+      // Update pagination info
+      setCurrentPage(response.pagination.currentPage);
+      setTotalPages(response.pagination.totalPages);
+      setHasMorePages(response.pagination.hasNext);
+      
+      if (response.movies.length > 0) {
+        // Convert backend data to frontend format
+        const newMoviesWithoutPosters = await Promise.all(response.movies.map(convertToMovie));
+        
+        // Add new movies to existing movies
+        const updatedMovies = [...movies, ...newMoviesWithoutPosters];
+        setMovies(updatedMovies);
+        
+        // Also update filtered movies if no filters are applied
+        if (shouldUpdateFilteredMovies()) {
+          setFilteredMovies([...filteredMovies, ...newMoviesWithoutPosters]);
+        }
+        
+        // Then start loading posters for new movies in batches in the background
+        console.log('Additional movies loaded, fetching posters in batches...');
+        const newMoviesWithPosters = await updatePostersInBatches(newMoviesWithoutPosters);
+        
+        // Update the full movie list with the new posters
+        const allMoviesWithPosters = [...movies.slice(0, movies.length - newMoviesWithPosters.length), ...newMoviesWithPosters];
+        setMovies(allMoviesWithPosters);
+        
+        // Also update filtered movies if no filters are applied
+        if (shouldUpdateFilteredMovies()) {
+          // We need to refilter since the order might have changed
+          applyFilters(allMoviesWithPosters);
+        }
+      }
+    } catch (err) {
+      console.error(`Error loading more movies (page ${currentPage + 1}):`, err);
+      setError(`Error loading more movies. Please try again.`);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+  
+  // Helper function to check if filtered movies should be updated with new movies
+  const shouldUpdateFilteredMovies = () => {
+    return (
+      searchTerm === '' && 
+      selectedGenre === 'All Genres' && 
+      selectedContentType === 'All Types' && 
+      collectionFilter === 'All'
+    );
+  };
+  
+  // Helper function to apply all current filters to the movies list
+  const applyFilters = (moviesList: Movie[]) => {
+    let result = moviesList;
     
     if (searchTerm) {
       result = result.filter(movie => 
@@ -252,6 +359,31 @@ const MoviesPage: React.FC = () => {
     }
     
     setFilteredMovies(result);
+  };
+
+  // Extract unique genres from movies
+  const uniqueGenres = useMemo(() => {
+    const genres = new Set<string>();
+    movies.forEach(movie => {
+      movie.genres.forEach(genre => {
+        genres.add(genre);
+      });
+    });
+    return ['All Genres', ...Array.from(genres)];
+  }, [movies]);
+
+  // Extract unique content types from movies
+  const contentTypes = useMemo(() => {
+    const types = new Set<string>();
+    movies.forEach(movie => {
+      types.add(movie.contentType);
+    });
+    return ['All Types', ...Array.from(types)];
+  }, [movies]);
+
+  // Filter movies when search or filters change
+  useEffect(() => {
+    applyFilters(movies);
   }, [searchTerm, selectedGenre, selectedContentType, collectionFilter, movies, isAuthenticated, favorites, watchlist]);
 
   // Handle clicks outside dropdowns
@@ -297,6 +429,11 @@ const MoviesPage: React.FC = () => {
   // Navigate to add movie page
   const handleAddMovie = () => {
     navigate('/movies/add');
+  };
+
+  // Handle load more button click
+  const handleLoadMore = () => {
+    loadMoreMovies();
   };
 
   return (
@@ -410,7 +547,7 @@ const MoviesPage: React.FC = () => {
         </div>
       </div>
       
-      {loading ? (
+      {initialLoading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <p>Loading movies...</p>
@@ -422,7 +559,7 @@ const MoviesPage: React.FC = () => {
       ) : (
         <>
           <div className="movie-grid">
-            {filteredMovies.slice(0, 12).map(movie => (
+            {filteredMovies.map(movie => (
               <div key={movie.id} className="movie-card">
                 <Link to={`/movies/${movie.id}`}>
                   <div className="movie-card-inner">
@@ -444,13 +581,14 @@ const MoviesPage: React.FC = () => {
             ))}
           </div>
           
-          {filteredMovies.length > 12 && (
+          {hasMorePages && !searchTerm && selectedGenre === 'All Genres' && selectedContentType === 'All Types' && (
             <div className="load-more">
               <button 
-                onClick={() => {}} 
-                className="btn-primary"
+                onClick={handleLoadMore} 
+                className={`btn-primary ${loadingMore ? 'loading' : ''}`}
+                disabled={loadingMore}
               >
-                Load More
+                {loadingMore ? 'Loading...' : 'Load More'}
               </button>
             </div>
           )}

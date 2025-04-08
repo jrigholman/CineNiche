@@ -85,20 +85,44 @@ interface Movie {
 }
 
 // Convert MovieTitle from API to our frontend Movie type
-const convertToMovie = (movieTitle: MovieTitle): Movie => {
-  // Create a movie object from the API data
+const convertToMovie = async (movieTitle: MovieTitle): Promise<Movie> => {
+  // Debug each property before conversion
+  console.log("Converting to Movie:", {
+    show_id: movieTitle.show_id,
+    title: movieTitle.title,
+    categories: movieTitle.Categories || [],
+    runtime: movieTitle.RuntimeMinutes
+  });
+
+  // Clean up the title if it exists, otherwise show as "Unknown"
+  const cleanTitle = movieTitle.title ? movieTitle.title.replace(/#/g, '').trim() : 'Unknown Title';
+  
+  // Check for both lowercase and uppercase key versions (due to camelCase serialization)
+  const categories = movieTitle.Categories || movieTitle.categories || [];
+  
+  // Get genre from Categories array if available - check both camelCase and PascalCase
+  const genre = categories.length > 0 
+    ? categories.join(', ')
+    : 'Unknown';
+    
+  // Default to placeholder - we'll load the actual poster later if needed
+  let posterUrl = `/images/placeholder-movie.jpg`;
+  
+  // Check both camelCase and PascalCase variations of runtime
+  const runtime = movieTitle.RuntimeMinutes || movieTitle.runtimeMinutes || 0;
+  
   return {
     id: movieTitle.show_id,
-    title: movieTitle.title || 'Untitled',
-    imageUrl: `https://via.placeholder.com/300x450?text=${encodeURIComponent(movieTitle.title || 'Movie')}`,
-    genre: 'Drama', // Default genre since backend doesn't have this yet
+    title: cleanTitle,
+    imageUrl: posterUrl,
+    genre: genre,
     year: movieTitle.release_year || 0,
     director: movieTitle.director || 'Unknown',
-    cast: [], // Backend doesn't have cast information yet
-    country: 'Unknown', // Backend doesn't have country information yet
-    description: 'No description available', // Backend doesn't have description yet
+    cast: movieTitle.cast ? movieTitle.cast.split(',').map(actor => actor.trim()) : ['Unknown Cast'],
+    country: movieTitle.country || 'Unknown',
+    description: movieTitle.description || 'No description available.',
     contentRating: movieTitle.rating || 'NR',
-    runtime: 0, // Backend doesn't have runtime information yet
+    runtime: runtime,
     averageRating: 0, // Will be calculated from ratings if available
     ratingCount: 0 // Will be calculated from ratings if available
   };
@@ -429,9 +453,44 @@ const MovieDetailPage: React.FC = () => {
         setLoading(true);
         const movieData = await moviesApi.getMovieById(id);
         
+        // Debug the raw data coming from the API
+        console.log('RAW API Response:', JSON.stringify(movieData, null, 2));
+        console.log('API returned Categories:', movieData?.Categories);
+        console.log('API returned RuntimeMinutes:', movieData?.RuntimeMinutes);
+        console.log('API returned duration:', movieData?.duration);
+        
         if (movieData) {
           // Convert the API data to our frontend Movie format
-          const movieDetails = convertToMovie(movieData);
+          const movieDetails = await convertToMovie(movieData);
+          
+          // Set initial movie details without poster to show UI faster
+          setMovie(movieDetails);
+          
+          // Only then try to load the poster
+          if (movieData.title) {
+            try {
+              // Use a small delay to avoid resource limits
+              await new Promise(resolve => setTimeout(resolve, 100));
+              const posterUrl = await moviesApi.getMoviePosterUrl(movieData.title);
+              
+              // Update the movie with the poster
+              setMovie(prev => {
+                if (prev === null) return null;
+                return {
+                  ...prev,
+                  imageUrl: posterUrl
+                };
+              });
+            } catch (err) {
+              console.error(`Error fetching poster for ${movieData.title}:`, err);
+              // Keep using the placeholder image
+            }
+          }
+          
+          // Log the converted movie object with genre and runtime
+          console.log('Converted to frontend format:', movieDetails);
+          console.log('Genre after conversion:', movieDetails.genre);
+          console.log('Runtime after conversion:', movieDetails.runtime);
           
           // Fetch the average rating for this movie
           try {
@@ -441,14 +500,20 @@ const MovieDetailPage: React.FC = () => {
             // Get the number of ratings
             const ratings = await moviesApi.getMovieRatings(id);
             movieDetails.ratingCount = ratings.length;
+            
+            // Update movie with ratings data
+            setMovie(prev => {
+              if (prev === null) return null;
+              return {
+                ...prev,
+                averageRating: avgRating,
+                ratingCount: ratings.length
+              };
+            });
           } catch (err) {
             console.error('Error fetching ratings:', err);
             // Use default values if ratings can't be fetched
-            movieDetails.averageRating = 0;
-            movieDetails.ratingCount = 0;
           }
-          
-          setMovie(movieDetails);
           
           // Check if the movie is in favorites or watchlist
           if (isAuthenticated) {
@@ -794,38 +859,48 @@ const MovieDetailPage: React.FC = () => {
               <div className="movie-meta-details">
                 <div className="movie-meta-item">
                   <span className="meta-label">Runtime</span>
-                  <span>{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+                  <span>
+                    {movie.runtime ? 
+                      `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m` : 
+                      'Unknown'}
+                  </span>
                 </div>
                 
                 <div className="movie-meta-item">
                   <span className="meta-label">Genre</span>
-                  <span className="movie-genre-tag">{movie.genre}</span>
+                  <span className="movie-genre-tag">{movie.genre || 'Unknown'}</span>
                 </div>
               </div>
               
               <div className="movie-tech-specs">
-                <p><span>Director:</span> {movie.director}</p>
-                <p><span>Country:</span> {movie.country}</p>
-                <p><span>Release:</span> {movie.year}</p>
-                <p><span>Rating:</span> {movie.contentRating}</p>
+                <p><span>Director:</span> {movie.director || 'Unknown'}</p>
+                <p><span>Country:</span> {movie.country || 'Unknown'}</p>
+                <p><span>Release:</span> {movie.year || 'Unknown'}</p>
+                <p><span>Rating:</span> {movie.contentRating || 'NR'}</p>
               </div>
             </div>
             
             <div className="movie-cast">
               <h3>Cast</h3>
               <div className="cast-list">
-                {movie.cast.slice(0, 4).map((actor, index) => (
-                  <div key={index} className="cast-item">
-                    <div className="cast-avatar">{actor.charAt(0)}</div>
-                    <span>{actor}</span>
-                  </div>
-                ))}
+                {movie.cast && movie.cast.length > 0 
+                  ? movie.cast.slice(0, 4).map((actor, index) => (
+                      <div key={index} className="cast-item">
+                        <div className="cast-avatar">{actor.charAt(0)}</div>
+                        <span>{actor}</span>
+                      </div>
+                    ))
+                  : <div className="cast-item">
+                      <div className="cast-avatar">?</div>
+                      <span>Unknown Cast</span>
+                    </div>
+                }
               </div>
             </div>
             
             <div className="movie-description">
               <h3>Synopsis</h3>
-              <p>{movie.description}</p>
+              <p>{movie.description || 'No description available.'}</p>
             </div>
             
             {isReviewMode && (

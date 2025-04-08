@@ -19,12 +19,77 @@ namespace CineNiche.API.Controllers
         [HttpGet("titles")]
         public async Task<ActionResult<List<MovieTitleDto>>> GetMovieTitles()
         {
+            // Log the request
+            Console.WriteLine("API Request: Get all movie titles");
+            
             var movies = await _context.Movies  
                 .OrderBy(m => m.title ?? string.Empty)
-                .Select(m => MovieTitleDto.FromEntity(m))
                 .ToListAsync();
-    
-            return Ok(movies);
+            
+            // Log how many movies were found
+            Console.WriteLine($"Found {movies.Count} movies in the database");
+            
+            // Sample log of the first few movies to see what data is available
+            if (movies.Count > 0)
+            {
+                for (int i = 0; i < Math.Min(3, movies.Count); i++)
+                {
+                    var movie = movies[i];
+                    Console.WriteLine($"Sample Movie {i+1}: " +
+                        $"ID={movie.show_id}, " +
+                        $"Title={movie.title ?? "null"}, " +
+                        $"Director={movie.director ?? "null"}, " +
+                        $"Cast={movie.cast?.Substring(0, Math.Min(20, movie.cast?.Length ?? 0)) ?? "null"}...");
+                }
+            }
+            
+            var movieDtos = movies.Select(m => MovieTitleDto.FromEntity(m)).ToList();
+            
+            return Ok(movieDtos);
+        }
+
+        [HttpGet("titles/paged")]
+        public async Task<ActionResult<object>> GetMovieTitlesPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            // Validate parameters
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 20;
+            
+            // Log the request
+            Console.WriteLine($"API Request: Get paginated movie titles - Page {page}, PageSize {pageSize}");
+            
+            // Get total count for pagination info
+            var totalCount = await _context.Movies.CountAsync();
+            
+            // Calculate how many pages exist
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            
+            // Get the requested page of movies
+            var movies = await _context.Movies
+                .OrderBy(m => m.title ?? string.Empty)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            
+            // Log how many movies were found
+            Console.WriteLine($"Found {movies.Count} movies for page {page} (total count: {totalCount})");
+            
+            var movieDtos = movies.Select(m => MovieTitleDto.FromEntity(m)).ToList();
+            
+            // Return both the movies and pagination info
+            var result = new {
+                movies = movieDtos,
+                pagination = new {
+                    currentPage = page,
+                    pageSize = pageSize,
+                    totalPages = totalPages,
+                    totalCount = totalCount,
+                    hasNext = page < totalPages,
+                    hasPrevious = page > 1
+                }
+            };
+            
+            return Ok(result);
         }
 
         [HttpGet("titles/{id}")]
@@ -32,14 +97,29 @@ namespace CineNiche.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<MovieTitleDto>> GetMovieTitle(string id)
         {
+            // Log the request
+            Console.WriteLine($"API Request: Get movie title with ID: {id}");
+            
             var movie = await _context.Movies.FindAsync(id);
-        
+
             if (movie == null)
             {
+                Console.WriteLine($"Movie with ID {id} not found");
                 return NotFound();
             }
             
-            return Ok(MovieTitleDto.FromEntity(movie));
+            // Log the movie data that was found
+            Console.WriteLine($"Found movie: " +
+                $"ID={movie.show_id}, " +
+                $"Title={movie.title ?? "null"}, " + 
+                $"Director={movie.director ?? "null"}, " +
+                $"Cast={movie.cast?.Substring(0, Math.Min(20, movie.cast?.Length ?? 0)) ?? "null"}..., " +
+                $"Country={movie.country ?? "null"}, " +
+                $"Description={movie.description?.Substring(0, Math.Min(20, movie.description?.Length ?? 0)) ?? "null"}...");
+            
+            var movieDto = MovieTitleDto.FromEntity(movie);
+            
+            return Ok(movieDto);
         }
 
         [HttpGet("users")]

@@ -54,22 +54,37 @@ const HomePage: React.FC = () => {
     const fetchMovies = async () => {
       try {
         setLoading(true);
-        const movieTitles = await moviesApi.getAllMovies();
+        // Use the new paginated API instead of the deprecated getAllMovies
+        const response = await moviesApi.getMoviesPaged(1, 6);
         
-        if (movieTitles && movieTitles.length > 0) {
+        if (response.movies && response.movies.length > 0) {
           // Convert to carousel item format
-          const recentMovies = movieTitles
+          const recentMovies = response.movies
             .map(convertToCarouselItem)
             .slice(0, 6); // Take top 6 movies
           
           setMovieImages(recentMovies);
           
-          // For recommended movies, just use a different slice of the same data for demo
-          const recommendedItems = movieTitles
-            .slice(6, 12)
-            .map(convertToCarouselItem);
-          
-          setRecommendedMovies(recommendedItems);
+          // For recommended movies, get another page or use a different slice
+          try {
+            // Try to get the second page for recommendations
+            const recResponse = await moviesApi.getMoviesPaged(2, 6);
+            if (recResponse.movies && recResponse.movies.length > 0) {
+              const recommendedItems = recResponse.movies.map(convertToCarouselItem);
+              setRecommendedMovies(recommendedItems);
+            } else {
+              // Fallback to using more from the first page
+              const recommendedItems = response.movies
+                .slice(Math.min(6, response.movies.length))
+                .map(convertToCarouselItem);
+              
+              setRecommendedMovies(recommendedItems.length > 0 ? 
+                recommendedItems : fallbackRecommendedMovies);
+            }
+          } catch (err) {
+            console.error('Error fetching recommended movies:', err);
+            setRecommendedMovies(fallbackRecommendedMovies);
+          }
         } else {
           // Use fallback data
           setMovieImages(fallbackMovieImages);

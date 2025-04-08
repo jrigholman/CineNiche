@@ -13,6 +13,7 @@ import TermsPage from './pages/TermsPage';
 import MyReviewsPage from './pages/MyReviewsPage';
 import ProfilePage from './pages/ProfilePage';
 import WatchPage from './pages/WatchPage';
+import PosterDebugPage from './pages/PosterDebugPage';
 
 // Import components
 import Navbar from './components/Navbar';
@@ -39,6 +40,7 @@ const App: React.FC = () => {
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/my-reviews" element={<MyReviewsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/debug/posters" element={<PosterDebugPage />} />
           </Routes>
         </main>
         <Footer />
