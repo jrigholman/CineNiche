@@ -1,25 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/Backend.csproj": {}
+    "C:\\Users\\jonat\\source\\repos\\CineNiche\\backend\\backend\\Backend.csproj": {}
   },
   "projects": {
-    "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/Backend.csproj": {
+    "C:\\Users\\jonat\\source\\repos\\CineNiche\\backend\\backend\\Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/Backend.csproj",
+        "projectUniqueName": "C:\\Users\\jonat\\source\\repos\\CineNiche\\backend\\backend\\Backend.csproj",
         "projectName": "Backend",
-        "projectPath": "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/Backend.csproj",
-        "packagesPath": "/Users/andieclegg/.nuget/packages/",
-        "outputPath": "/Users/andieclegg/CineNiche-Final/CineNiche/Backend/Backend/obj/",
+        "projectPath": "C:\\Users\\jonat\\source\\repos\\CineNiche\\backend\\backend\\Backend.csproj",
+        "packagesPath": "C:\\Users\\jonat\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\jonat\\source\\repos\\CineNiche\\backend\\backend\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/Users/andieclegg/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\jonat\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -107,7 +113,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.406/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.407/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
