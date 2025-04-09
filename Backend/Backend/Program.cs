@@ -2,6 +2,8 @@ using CineNiche.API.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
+using CineNiche.API.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,7 +46,8 @@ builder.Services.Configure<StytchConfig>(builder.Configuration.GetSection("Stytc
 builder.Services.AddSingleton(provider =>
 {
     var config = provider.GetRequiredService<IOptions<StytchConfig>>().Value;
-    return new Stytch.Client(new Stytch.Client.Options
+    // Use the fully qualified name with our namespace
+    return new CineNiche.API.Models.Stytch.Client(new CineNiche.API.Models.Stytch.Client.Options
     {
         ProjectID = config.ProjectID,
         Secret = config.Secret
