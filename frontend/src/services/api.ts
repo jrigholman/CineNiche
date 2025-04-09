@@ -90,6 +90,17 @@ export const moviesApi = {
       return [];
     }
   },
+  
+  getMovieRecommendations: async (showId: string, userId?: number): Promise<MovieTitle[]> => {
+    try {
+        const params = userId ? `?userId=${userId}` : '';
+        const response = await api.get(`/movies/titles/${showId}/recommendations${params}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching recommendations for movie ${showId}:`, error);
+        return [];
+    }
+  },
 
   // Get movie titles with pagination
   getMoviesPaged: async (page: number = 1, pageSize: number = 20): Promise<PaginatedResponse<MovieTitle>> => {
