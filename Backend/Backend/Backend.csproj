@@ -29,4 +29,10 @@
       <Folder Include="RecommendationEngine\" />
     </ItemGroup>
 
+	<ItemGroup>
+		<None Update="Data/Movies.db">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
 </Project>
