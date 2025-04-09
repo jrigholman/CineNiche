@@ -91,7 +91,8 @@ const convertToMovie = async (movieTitle: MovieTitle): Promise<Movie> => {
     show_id: movieTitle.show_id,
     title: movieTitle.title,
     categories: movieTitle.Categories || [],
-    runtime: movieTitle.RuntimeMinutes
+    runtime: movieTitle.RuntimeMinutes,
+    cast: movieTitle.cast
   });
 
   // Clean up the title if it exists, otherwise show as "Unknown"
@@ -111,6 +112,38 @@ const convertToMovie = async (movieTitle: MovieTitle): Promise<Movie> => {
   // Check both camelCase and PascalCase variations of runtime
   const runtime = movieTitle.RuntimeMinutes || movieTitle.runtimeMinutes || 0;
   
+  // New logic for processing cast: group every two words as a name
+  let castArray: string[] = ['Unknown Cast'];
+  
+  if (movieTitle.cast) {
+    // First check if cast already has commas (proper formatting)
+    if (movieTitle.cast.includes(',')) {
+      castArray = movieTitle.cast.split(',').map(actor => actor.trim());
+    } else {
+      // If no commas, process by assuming every two words is a name
+      const words = movieTitle.cast.trim().split(/\s+/);
+      castArray = [];
+      
+      // Group every two words together
+      for (let i = 0; i < words.length; i += 2) {
+        if (i + 1 < words.length) {
+          // If we have two words, join them
+          castArray.push(`${words[i]} ${words[i + 1]}`);
+        } else {
+          // If we have an odd number of words, the last one gets its own entry
+          castArray.push(words[i]);
+        }
+      }
+      
+      // If we didn't get any valid names, use default
+      if (castArray.length === 0) {
+        castArray = ['Unknown Cast'];
+      }
+    }
+  }
+  
+  console.log("Processed cast array:", castArray);
+  
   return {
     id: movieTitle.show_id,
     title: cleanTitle,
@@ -118,7 +151,7 @@ const convertToMovie = async (movieTitle: MovieTitle): Promise<Movie> => {
     genre: genre,
     year: movieTitle.release_year || 0,
     director: movieTitle.director || 'Unknown',
-    cast: movieTitle.cast ? movieTitle.cast.split(',').map(actor => actor.trim()) : ['Unknown Cast'],
+    cast: castArray,
     country: movieTitle.country || 'Unknown',
     description: movieTitle.description || 'No description available.',
     contentRating: movieTitle.rating || 'NR',
@@ -764,7 +797,22 @@ const MovieDetailPage: React.FC = () => {
               </div>
             </div>
             
+            {/* Show average rating in the left column for logged-in users with a review */}
             {isAuthenticated && userReview && (
+              <div className="average-rating-container">
+                <span className="meta-label">Average CineNiche Rating</span>
+                <div className="average-rating">
+                  <div className="stars">
+                    <StarRating rating={movie.averageRating} />
+                  </div>
+                  <span className="rating-number">{movie.averageRating.toFixed(1)}</span>
+                  <span className="rating-count">({movie.ratingCount} ratings)</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Show average rating in the left column for non-logged-in users */}
+            {!isAuthenticated && (
               <div className="average-rating-container">
                 <span className="meta-label">Average CineNiche Rating</span>
                 <div className="average-rating">
@@ -839,11 +887,12 @@ const MovieDetailPage: React.FC = () => {
                   className="btn-primary btn-watch"
                   onClick={() => navigate(`/watch/${movie.id}`)}
                 >
-                  <span className="action-icon">▶</span> Watch Movie
+                  <span className="action-icon">▶</span> Watch
                 </button>
               </div>
               
-              {(!isAuthenticated || !userReview) && (
+              {/* Show rating in right column only for logged-in users without a review */}
+              {isAuthenticated && !userReview && (
                 <div className="average-rating-container right-column-rating">
                   <span className="meta-label">Average CineNiche Rating</span>
                   <div className="average-rating">

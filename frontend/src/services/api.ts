@@ -555,13 +555,36 @@ export const usersApi = {
   // Login (for demonstration, we'll assume backend will validate credentials)
   login: async (email: string, password: string): Promise<MovieUser | null> => {
     try {
+      console.log(`Attempting login for email: ${email}`);
+      
       // In a real app, we would send credentials to the backend
       // For now, we'll just get the users and find the matching one
       const users = await usersApi.getAllUsers();
-      const user = users.find(u => u.email === email);
+      console.log(`Fetched ${users.length} users from database`);
       
-      // In a real app, password would be verified by the backend
-      return user || null;
+      // Debug the available users (be careful with logging passwords in production)
+      users.forEach((user, index) => {
+        console.log(`User ${index+1}: email=${user.email}, name=${user.name}`);
+      });
+      
+      // Find user with matching email
+      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      
+      if (!user) {
+        console.log(`No user found with email: ${email}`);
+        return null;
+      }
+      
+      console.log(`Found user: ${user.name} (${user.email})`);
+      
+      // Check if password matches - case sensitive
+      if (user.password === password) {
+        console.log('Password matched, login successful');
+        return user;
+      } else {
+        console.log('Password did not match, login failed');
+        return null;
+      }
     } catch (error) {
       console.error('Error during login:', error);
       return null;

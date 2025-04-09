@@ -19,8 +19,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         // Include all properties in serialization
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        // Ensure computed properties are serialized correctly
-        options.JsonSerializerOptions.PropertyInfoFilters.Clear();
+        // Enable property name case-insensitive matching for deserialization
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
 // Add CORS
@@ -36,6 +36,18 @@ builder.Services.AddCors(options =>
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
+    });
+});
+
+builder.Services.Configure<StytchConfig>(builder.Configuration.GetSection("Stytch"));
+
+builder.Services.AddSingleton(provider =>
+{
+    var config = provider.GetRequiredService<IOptions<StytchConfig>>().Value;
+    return new Stytch.Client(new Stytch.Client.Options
+    {
+        ProjectID = config.ProjectID,
+        Secret = config.Secret
     });
 });
 
