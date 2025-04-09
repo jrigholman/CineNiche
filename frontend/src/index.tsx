@@ -9,6 +9,14 @@ import reportWebVitals from "./reportWebVitals";
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
+
+// Define stytchConfig before using it
+const stytchConfig = {
+  publicToken: process.env.REACT_APP_STYTCH_PUBLIC_TOKEN || "",
+  loginRedirectURL: "http://localhost:3000/dashboard",
+  sessionOptions: { duration_minutes: 60 },
+};
+
 root.render(
   <React.StrictMode>
     <StytchProvider config={stytchConfig}>
@@ -18,12 +26,6 @@ root.render(
     </StytchProvider>
   </React.StrictMode>
 );
-
-const stytchConfig = {
-  publicToken: process.env.REACT_APP_STYTCH_PUBLIC_TOKEN || "",
-  loginRedirectURL: "http://localhost:3000/dashboard",
-  sessionOptions: { duration_minutes: 60 },
-};
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
