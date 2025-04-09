@@ -3,13 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using CineNiche.API.Models;
+using CineNiche.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add configuration
 builder.Configuration.AddJsonFile("appsettings.json");
 
+builder.Services.AddScoped<RecommendationService>(); 
 // Add services to the container
 builder.Services.AddDbContext<MoviesDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("MoviesDb")));

@@ -465,6 +465,7 @@ const MovieDetailPage: React.FC = () => {
   // Get auth context
   const { 
     isAuthenticated, 
+    user,
     reviewedMovies, 
     addReview, 
     toggleFavorite, 
@@ -598,6 +599,43 @@ const MovieDetailPage: React.FC = () => {
     
     fetchMovie();
   }, [id, isAuthenticated, checkFavorites, checkWatchlist, userReview]);
+
+  // Add this new useEffect specifically for recommendations
+useEffect(() => {
+  // Only fetch recommendations if we have a movie loaded
+  if (!movie) return;
+
+  const fetchRecommendations = async () => {
+      try {
+          const recommendations = await moviesApi.getMovieRecommendations(
+              movie.id, 
+              user?.id
+          );
+          
+          const recommendedMovies = await Promise.all(
+              recommendations.map(async (rec: MovieTitle) => {
+                  const converted = await convertToMovie(rec);
+                  // Optional: Enhance with poster images
+                  if (rec.title) {
+                      try {
+                          converted.imageUrl = await moviesApi.getMoviePosterUrl(rec.title);
+                      } catch (err) {
+                          console.error('Error loading poster:', err);
+                      }
+                  }
+                  return converted;
+              })
+          );
+          
+          setSimilarMovies(recommendedMovies);
+      } catch (error) {
+          console.error('Recommendation fetch failed:', error);
+          setSimilarMovies([]); // Fallback to empty array
+      }
+  };
+
+  fetchRecommendations();
+}, [movie, user?.id]); // Re-run when movie or user changes
   
   // This effect ensures the component updates when reviewedMovies changes
   useEffect(() => {
@@ -671,14 +709,7 @@ const MovieDetailPage: React.FC = () => {
     setIsInWatchlist(!isInWatchlist);
   };
 
-  // Get similar movies based on genre
-  const getSimilarMovies = () => {
-    if (!movie) return [];
-    // Return up to 5 movies with the same genre, and fill with other movies if needed
-    const sameGenre = moviesData.filter(m => m.id !== movie.id && m.genre === movie.genre);
-    const otherMovies = moviesData.filter(m => m.id !== movie.id && m.genre !== movie.genre);
-    return [...sameGenre, ...otherMovies].slice(0, 5);
-  };
+  const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
   
   const handleSaveEdit = (updatedMovie: Movie) => {
     // Update movie in our data store (would be an API call in real app)
@@ -1015,7 +1046,7 @@ const MovieDetailPage: React.FC = () => {
             ref={similarMoviesRef}
           >
             <div className="film-scroll-track">
-              {getSimilarMovies().map((movie) => (
+              {similarMovies.slice(0, 5).map((movie) => (
                 <Link to={`/movies/${movie.id}`} key={movie.id} className="film-item">
                   <img src={movie.imageUrl} alt={movie.title} />
                   <p>{movie.title}</p>
