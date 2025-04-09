@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create an axios instance with the base URL for our API
 const api = axios.create({
-  baseURL: 'http://localhost:5212/api', // Updated to match the running backend port
+  baseURL: 'https://cineniche-fkazataxamgph8bu.eastus-01.azurewebsites.net/api/movies', // Updated to match the running backend port
   headers: {
     'Content-Type': 'application/json',
   },
